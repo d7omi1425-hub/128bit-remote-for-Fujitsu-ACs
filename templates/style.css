@@ -1,0 +1,144 @@
+* {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+body {
+  min-height: 100vh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: linear-gradient(135deg, #0f0c29, #302b63, #24243e);
+  font-family: 'Segoe UI', sans-serif;
+}
+
+table {
+  max-width: 100%;
+  border: none;
+  border-collapse: separate;
+  border-spacing: 12px;
+  background: rgba(255, 255, 255, 0.05);
+  backdrop-filter: blur(10px);
+  border-radius: 24px;
+  padding: 32px;
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.4),
+              inset 0 1px 0 rgba(255, 255, 255, 0.1);
+}
+
+/* Display row shared */
+h1#MODE, h1#TEMP, h1#FAN {
+  font-weight: 700;
+  letter-spacing: 3px;
+  text-align: center;
+  padding: 12px 0;
+}
+
+/* Mode label */
+h1#MODE {
+  color: #a78bfa;
+  font-size: 1.4rem;
+  text-shadow: 0 0 16px rgba(167, 139, 250, 0.6);
+}
+
+/* Temperature display */
+h1#TEMP {
+  color: #00e5ff;
+  font-size: 3.5rem;
+  text-shadow: 0 0 20px rgba(0, 229, 255, 0.6),
+               0 0 40px rgba(0, 229, 255, 0.3);
+}
+
+/* Fan speed label */
+h1#FAN {
+  color: #34d399;
+  font-size: 1.4rem;
+  text-shadow: 0 0 16px rgba(52, 211, 153, 0.6);
+}
+
+/* All buttons base style */
+button {
+  border: none;
+  border-radius: 16px;
+  cursor: pointer;
+  font-size: 1rem;
+  font-weight: 600;
+  letter-spacing: 1px;
+  text-transform: uppercase;
+  transition: all 0.2s ease;
+  position: relative;
+  overflow: hidden;
+}
+
+button::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: rgba(255, 255, 255, 0);
+  transition: background 0.2s;
+}
+
+button:hover::after {
+  background: rgba(255, 255, 255, 0.1);
+}
+
+button:active {
+  transform: scale(0.96);
+}
+
+/* MODE button */
+button[name="MODEbtn"] {
+  background: linear-gradient(180deg, #6a11cb, #2575fc);
+  color: #fff;
+  box-shadow: 0 4px 20px rgba(106, 17, 203, 0.5);
+}
+
+button[name="MODEbtn"]:hover {
+  box-shadow: 0 6px 28px rgba(106, 17, 203, 0.7);
+}
+
+/* FAN button */
+button[name="FANbtn"] {
+  background: linear-gradient(180deg, #11998e, #38ef7d);
+  color: #fff;
+  box-shadow: 0 4px 20px rgba(17, 153, 142, 0.5);
+}
+
+button[name="FANbtn"]:hover {
+  box-shadow: 0 6px 28px rgba(17, 153, 142, 0.7);
+}
+
+/* Temp Up button */
+button[name="TUP"] {
+  background: linear-gradient(135deg, #f7971e, #ffd200);
+  color: #1a1a2e;
+  box-shadow: 0 4px 20px rgba(247, 151, 30, 0.5);
+}
+
+button[name="TUP"]:hover {
+  box-shadow: 0 6px 28px rgba(247, 151, 30, 0.7);
+}
+
+/* Temp Down button */
+button[name="TDOWN"] {
+  background: linear-gradient(135deg, #00c6ff, #0072ff);
+  color: #fff;
+  box-shadow: 0 4px 20px rgba(0, 114, 255, 0.5);
+}
+
+button[name="TDOWN"]:hover {
+  box-shadow: 0 6px 28px rgba(0, 114, 255, 0.7);
+}
+
+td {
+  vertical-align: middle;
+  text-align: center;
+}
+
+caption {
+  color: rgba(255, 255, 255, 0.35);
+  font-size: 0.8rem;
+  letter-spacing: 2px;
+  text-transform: uppercase;
+  padding-bottom: 12px;
+}

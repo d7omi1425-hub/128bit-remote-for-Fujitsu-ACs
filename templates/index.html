@@ -1,0 +1,247 @@
+<!DOCTYPE html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>AC remote</title>
+<link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+</head>
+
+<body>
+    <div class="aurora">
+        <div class="blob blob1"></div>
+        <div class="blob blob2"></div>
+        <div class="blob blob3"></div>
+    </div>
+    <canvas id="windCanvas"></canvas>
+
+    <div class="card">
+        <div class="caption">By abo talal</div>
+
+        <button class="power-btn" id="powerBtn" name="POWERbtn">
+            <svg width="22" height="22" viewBox="0 0 24 24" fill="none"
+                 stroke="currentColor" stroke-width="2.5" stroke-linecap="round">
+                <line x1="12" y1="2" x2="12" y2="12"/>
+                <path d="M17.66 5.34A8 8 0 1 1 6.34 5.34"/>
+            </svg>
+        </button>
+
+        <div class="ac-content" id="acContent">
+
+            <div class="display-row">
+                <div class="display-cell">
+                    <span class="label">MODE</span>
+                    <h1 id="MODE">COOL</h1>
+                </div>
+
+                <div class="sep"></div>
+
+                <div class="display-cell display-cell--temp">
+                    <span class="label">&#176;C</span>
+                    <h1 id="TEMP">22</h1>
+                    <div class="temp-bar">
+                        <div class="temp-bar-fill" id="tempBar"></div>
+                    </div>
+                </div>
+
+                <div class="sep"></div>
+
+                <div class="display-cell">
+                    <span class="label">FAN</span>
+                    <div class="fan-row">
+                        <span class="fan-icon" id="fanIcon">&#10022;</span>
+                        <h1 id="FAN">HIGH</h1>
+                    </div>
+                </div>
+            </div>
+
+            <div class="divider"></div>
+
+            <div class="controls-row">
+                <button class="btn btn-mode" name="MODEbtn">MODE</button>
+                <div class="temp-controls">
+                    <button class="btn btn-up"   name="TUP">&#9650;</button>
+                    <button class="btn btn-down" name="TDOWN">&#9660;</button>
+                </div>
+                <button class="btn btn-fan" name="FANbtn">FAN</button>
+            </div>
+
+        </div>
+    </div>
+
+    <script>
+        /* ── Constants ──────────────────────────────────────── */
+        const MODE_LABELS = { C:'COOL', A:'AUTO', F:'FAN', D:'DRY'   };
+        const FAN_LABELS  = { H:'HIGH', M:'MED',  L:'LOW', Q:'QUITE' };
+        const FAN_SPEED   = { H:5,     M:3,       L:1.5,   Q:0.6    };
+        const FAN_COUNT   = { H:45,    M:28,      L:13,    Q:5      };
+        const FAN_DUR_S   = { H:0.3,   M:0.65,    L:1.3,   Q:3.0   };
+
+        /* ── Shared state ───────────────────────────────────── */
+        let currentFan = 'H';
+        let powered    = true;
+        let tempHue    = 210;
+        let windFade   = 1;
+        let prevState  = {};
+
+        /* ── Wind canvas ────────────────────────────────────── */
+        const canvas = document.getElementById('windCanvas');
+        const ctx    = canvas.getContext('2d');
+
+        function resizeCanvas() {
+            canvas.width  = window.innerWidth;
+            canvas.height = window.innerHeight;
+        }
+        resizeCanvas();
+        window.addEventListener('resize', resizeCanvas);
+
+        class WindParticle {
+            constructor() { this.reset(true); }
+            reset(scatter) {
+                this.x      = scatter ? Math.random() * canvas.width : -80;
+                this.y      = Math.random() * canvas.height;
+                this.speedK = 0.55 + Math.random() * 0.45;
+                this.vx     = this.speedK * (FAN_SPEED[currentFan] || 2);
+                this.vy     = (Math.random() - 0.5) * 0.45;
+                this.len    = 18 + Math.random() * 52;
+                this.alpha  = 0.05 + Math.random() * 0.11;
+                this.lw     = 0.5  + Math.random() * 1;
+            }
+            update() {
+                const target = this.speedK * (FAN_SPEED[currentFan] || 2);
+                this.vx += (target - this.vx) * 0.06;
+                this.x  += this.vx;
+                this.y  += this.vy;
+                if (this.x > canvas.width + 100) this.reset(false);
+            }
+            draw() {
+                ctx.strokeStyle = `hsla(${tempHue},75%,72%,${this.alpha * windFade})`;
+                ctx.lineWidth   = this.lw;
+                ctx.lineCap     = 'round';
+                ctx.beginPath();
+                ctx.moveTo(this.x, this.y);
+                ctx.lineTo(this.x - this.len, this.y - this.vy * 10);
+                ctx.stroke();
+            }
+        }
+
+        let windParticles = [];
+
+        (function animWind() {
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+            windFade = powered
+                ? Math.min(1, windFade + 0.025)
+                : Math.max(0, windFade - 0.015);
+
+            const count = FAN_COUNT[currentFan] || 10;
+            while (windParticles.length < count) windParticles.push(new WindParticle());
+            if (windParticles.length > count + 5) windParticles.length = count;
+
+            for (const p of windParticles) { p.update(); p.draw(); }
+            requestAnimationFrame(animWind);
+        })();
+
+        /* ── Ripple ─────────────────────────────────────────── */
+        function addRipple(btn, e) {
+            const rect = btn.getBoundingClientRect();
+            const size = Math.max(rect.width, rect.height);
+            const el   = document.createElement('span');
+            el.className = 'ripple';
+            Object.assign(el.style, {
+                width:  size + 'px',
+                height: size + 'px',
+                left:   (e.clientX - rect.left - size / 2) + 'px',
+                top:    (e.clientY - rect.top  - size / 2) + 'px'
+            });
+            btn.appendChild(el);
+            el.addEventListener('animationend', () => el.remove());
+        }
+        document.querySelectorAll('.btn, .power-btn').forEach(btn =>
+            btn.addEventListener('mousedown', e => addRipple(btn, e))
+        );
+
+        /* ── Temp bump ──────────────────────────────────────── */
+        function bumpTemp() {
+            const el = document.getElementById('TEMP');
+            el.classList.remove('bump');
+            void el.offsetWidth;
+            el.classList.add('bump');
+        }
+
+        /* ── Button flash (replaces emoji burst) ────────────── */
+        function flashBtn(isUp) {
+            const btn = document.querySelector(isUp ? '[name="TUP"]' : '[name="TDOWN"]');
+            btn.classList.remove('btn-flash');
+            void btn.offsetWidth;
+            btn.classList.add('btn-flash');
+            btn.addEventListener('animationend', () => btn.classList.remove('btn-flash'), { once: true });
+        }
+
+        /* ── Label pop ──────────────────────────────────────── */
+        function popLabel(id) {
+            const el = document.getElementById(id);
+            el.classList.remove('pop');
+            void el.offsetWidth;
+            el.classList.add('pop');
+        }
+
+        /* ── Colors ─────────────────────────────────────────── */
+        function applyColors(temp) {
+            tempHue = Math.round(240 * (1 - (temp - 18) / 12));
+            const r = document.documentElement;
+            r.style.setProperty('--temp-color',     `hsl(${tempHue},80%,62%)`);
+            r.style.setProperty('--temp-glow',      `hsla(${tempHue},80%,62%,0.55)`);
+            r.style.setProperty('--temp-card-glow', `hsla(${tempHue},80%,62%,0.13)`);
+            document.body.style.background =
+                `linear-gradient(135deg,hsl(${tempHue},22%,7%),hsl(${tempHue},18%,11%))`;
+
+            const pct = ((temp - 18) / 12) * 100;
+            document.getElementById('tempBar').style.width = pct + '%';
+        }
+
+        /* ── Update display ─────────────────────────────────── */
+        function updateDisplay(state) {
+            if (state.mode !== prevState.mode) {
+                document.getElementById('MODE').textContent = MODE_LABELS[state.mode];
+                if (prevState.mode != null) popLabel('MODE');
+            }
+            if (state.temp !== prevState.temp) {
+                document.getElementById('TEMP').textContent = state.temp;
+                if (prevState.temp != null) bumpTemp();
+            }
+            if (state.fan !== prevState.fan) {
+                document.getElementById('FAN').textContent = FAN_LABELS[state.fan];
+                if (prevState.fan != null) popLabel('FAN');
+            }
+
+            applyColors(state.temp);
+
+            currentFan = state.fan;
+            document.documentElement.style.setProperty('--fan-dur', FAN_DUR_S[currentFan] + 's');
+
+            powered = !!state.power;
+            document.getElementById('powerBtn').classList.toggle('on', powered);
+            document.getElementById('acContent').classList.toggle('dimmed', !powered);
+            document.getElementById('fanIcon').style.animationPlayState =
+                powered ? 'running' : 'paused';
+
+            prevState = { ...state };
+        }
+
+        /* ── Post ───────────────────────────────────────────── */
+        async function post(url) {
+            const oldTemp = prevState.temp;
+            const state   = await fetch(url, { method: 'POST' }).then(r => r.json());
+            if (url === '/up'   && state.temp > oldTemp) flashBtn(true);
+            if (url === '/down' && state.temp < oldTemp) flashBtn(false);
+            updateDisplay(state);
+        }
+
+        document.querySelector('[name="TUP"]').addEventListener('click',      () => post('/up'));
+        document.querySelector('[name="TDOWN"]').addEventListener('click',    () => post('/down'));
+        document.querySelector('[name="MODEbtn"]').addEventListener('click',  () => post('/mode'));
+        document.querySelector('[name="FANbtn"]').addEventListener('click',   () => post('/fan'));
+        document.querySelector('[name="POWERbtn"]').addEventListener('click', () => post('/toggle'));
+
+        fetch('/state').then(r => r.json()).then(updateDisplay);
+    </script>
+</body>
